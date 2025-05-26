@@ -1,22 +1,28 @@
-// /api/create-order
-import Razorpay from 'razorpay';
+import { NextRequest, NextResponse } from "next/server";
+import Razorpay from "razorpay";
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+export async function POST(req) {
+  // Parse body
+  const { amount, currency = "INR", receipt = "receipt#1" } = await req.json();
 
-export default async function handler(req, res) {
-  const { amount, currency, receipt } = req.body;
+  // Always instantiate Razorpay client **inside** the function!
+  const razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+  });
+
   const options = {
-    amount: amount * 100, // ₹199 = 19900 paise
-    currency: currency || "INR",
-    receipt: receipt || "receipt#1",
+    amount: amount * 100, // Amount in paise
+    currency,
+    receipt,
   };
+
   try {
     const order = await razorpay.orders.create(options);
-    res.status(200).json(order);
+    return NextResponse.json(order);
   } catch (err) {
-    res.status(500).json({ error: "Order creation failed" });
+    return NextResponse.json({ error: "Order creation failed", details: err.message }, { status: 500 });
   }
 }
+
+// No GET handler need
