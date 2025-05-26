@@ -206,7 +206,7 @@ const handleVerifyOtp = async (e: React.FormEvent) => {
                       </div>
                     )}
                     <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" size="lg" disabled={isLoading}>
-                      {isLoading ? "Creating Account..." : "Create Account - It's Free"}
+                      {isLoading ? "Creating Account..." : "Create Account"}
                     </Button>
                     <div className="text-center text-sm text-gray-600">
                       Already have an account?{" "}
