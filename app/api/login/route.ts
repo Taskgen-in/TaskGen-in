@@ -22,14 +22,14 @@ export async function POST(req) {
     user: { id: user.id, name: user.name, email: user.email, role: user.role }
   });
 
-  // Set the session_token as an HTTP-only cookie
   response.cookies.set("session_token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     path: "/",
     sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: 60 * 60 * 24 * 7,
   });
+console.log("Will return user:", user);
 
   return response;
 }

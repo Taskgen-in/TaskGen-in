@@ -12,16 +12,26 @@ export async function POST(req: Request) {
   const match = await bcrypt.compare(password, user.password);
   if (!match) return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
 
-  const jwt = signJWT({ id: user.id, email: user.email, role: user.role }); // include role!
-  const res = NextResponse.json({ success: true, role: user.role }); // include role in response
+  const jwt = signJWT({ id: user.id, email: user.email, role: user.role });
+  
+  // --- SEND USER OBJECT IN RESPONSE! ---
+  const res = NextResponse.json({
+    success: true,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    }
+  });
 
   res.cookies.set("session_token", jwt, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 7, // 1 week
-    secure: process.env.NODE_ENV === "production" ? true : false // must be false locally!
+    secure: process.env.NODE_ENV === "production" ? true : false
   });
-  console.log("Setting cookie:", jwt);
+
   return res;
 }

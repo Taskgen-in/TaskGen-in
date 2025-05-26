@@ -19,6 +19,7 @@ export default function LoginPage() {
   })
   const [error, setError] = useState("")
   const router = useRouter()
+  
 
   async function handleLogin(e) {
   e.preventDefault();
@@ -31,17 +32,21 @@ export default function LoginPage() {
   });
   const data = await res.json();
   console.log("Login API response", data);
-  if (data.success && data.role) {
-    localStorage.setItem("userRole", data.role);
-    if (data.role === "admin") {
-      router.push("/admin/");
-    } else {
-      router.push("/dashboard");
-    }
+
+  if (data.success && data.user) {
+  localStorage.setItem("userRole", data.user.role);
+  localStorage.setItem("userName", data.user.name); // <-- Save name
+  localStorage.setItem("userEmail", data.user.email); // (optional)
+  if (data.user.role === "admin") {
+    router.push("/admin/");
   } else {
+    router.push("/dashboard");
+  }
+} else {
     setError(data.error || "Login failed");
   }
 }
+
 
 
   const fillUserCredentials = () => {
