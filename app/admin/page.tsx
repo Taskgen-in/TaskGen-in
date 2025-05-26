@@ -12,7 +12,7 @@ import { Users, TrendingUp, Filter, Search, CheckCircle, XCircle, Eye, Edit, Tra
 import { AuthGuard } from "@/components/auth-guard"
 import Image from "next/image"
 import { CreateTaskModal } from "@/components/create-task-modal"
-
+import { TaskDetailModal } from "@/components/task-detail-modal"
 
 export default function AdminDashboard() {
   const [userFilter, setUserFilter] = useState("all")
@@ -23,6 +23,13 @@ export default function AdminDashboard() {
 const [users, setUsers] = useState([]);
 const [loadingUsers, setLoadingUsers] = useState(false);
 const [error, setError] = useState(null);
+const [selectedTask, setSelectedTask] = useState(null);
+const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+const [tasks, setTasks] = useState([]);
+const [loadingTasks, setLoadingTasks] = useState(false);
+const [tasksError, setTasksError] = useState(null);
+
+
 
   useEffect(() => {
   async function fetchUsers() {
@@ -47,7 +54,11 @@ const [error, setError] = useState(null);
   fetchUsers();
 }, [userFilter, searchTerm]);
 
-
+const handleTaskAction = (taskId, action) => {
+  // Implement real logic (view/edit/delete) as needed
+  console.log('Admin Task Action:', { taskId, action });
+  // setIsTaskModalOpen(false); // Uncomment to auto-close modal after action
+};
   const handleLogout = () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("currentUser")
@@ -56,12 +67,45 @@ const [error, setError] = useState(null);
     }
   }
 
-  const handleCreateTask = (taskData: any) => {
-    console.log("Creating task:", taskData)
-    // Here you would typically send the data to your backend
-    // For now, we'll just log it
-    alert("Task created successfully!")
+
+
+const fetchTasks = async () => {
+  setLoadingTasks(true);
+  setTasksError(null);
+  try {
+    let url = "/api/admin/tasks";
+    if (taskFilter && taskFilter !== "all") url += `?status=${taskFilter}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Failed to load tasks");
+    const data = await res.json();
+    setTasks(data);
+  } catch (e) {
+    setTasksError(e.message || "Error fetching tasks");
   }
+  setLoadingTasks(false);
+};
+
+useEffect(() => {
+  fetchTasks();
+}, [taskFilter]);
+  const handleCreateTask = async (taskData) => {
+  try {
+    const res = await fetch('/api/admin/tasks', {
+      method: 'POST',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(taskData)
+    });
+    const result = await res.json();
+    if (res.ok) {
+      alert("Task created successfully! Task ID: " + result.id);
+      // Optionally reload task list or close modal here
+    } else {
+      alert("Failed: " + result.error);
+    }
+  } catch (e) {
+    alert("Server error: " + e.message);
+  }
+};
 
   const getKYCStatus = user => user.kyc_status || "pending";
 //  {
@@ -133,88 +177,88 @@ const [error, setError] = useState(null);
   //   },
   // ]
 
-  const tasks = [
-    {
-      id: 1,
-      title: "E-commerce Product Review Survey",
-      category: "Survey",
-      payout: 45,
-      totalSlots: 25,
-      completed: 8,
-      maxParticipants: 25,
-      currentParticipants: 8,
-      timeLimit: 3, // hours
-      status: "active",
-      createdDate: "2024-01-15",
-      deadline: "2024-01-20",
-      expiresAt: "2024-01-20T18:00:00Z",
-      difficulty: "Easy",
-    },
-    {
-      id: 2,
-      title: "AI Training - Image Object Detection",
-      category: "AI Training",
-      payout: 35,
-      totalSlots: 50,
-      completed: 32,
-      maxParticipants: 50,
-      currentParticipants: 32,
-      timeLimit: 2, // hours
-      status: "active",
-      createdDate: "2024-01-14",
-      deadline: "2024-01-18",
-      expiresAt: "2024-01-18T20:00:00Z",
-      difficulty: "Medium",
-    },
-    {
-      id: 3,
-      title: "Content Moderation Task",
-      category: "Content Review",
-      payout: 60,
-      totalSlots: 15,
-      completed: 15,
-      maxParticipants: 15,
-      currentParticipants: 15,
-      timeLimit: 4, // hours
-      status: "completed",
-      createdDate: "2024-01-10",
-      deadline: "2024-01-15",
-      expiresAt: "2024-01-15T23:59:59Z",
-      difficulty: "Medium",
-    },
-    {
-      id: 4,
-      title: "Hindi Translation Project",
-      category: "Translation",
-      payout: 80,
-      totalSlots: 10,
-      completed: 3,
-      maxParticipants: 10,
-      currentParticipants: 3,
-      timeLimit: 6, // hours
-      status: "active",
-      createdDate: "2024-01-12",
-      deadline: "2024-01-22",
-      expiresAt: "2024-01-22T18:00:00Z",
-      difficulty: "Hard",
-    },
-    {
-      id: 5,
-      title: "Product Photography Review",
-      category: "Content Review",
-      payout: 30,
-      totalSlots: 20,
-      completed: 8,
-      maxParticipants: 20,
-      currentParticipants: 8,
-      timeLimit: 2, // hours
-      status: "expired",
-      createdDate: "2024-01-15",
-      deadline: "2024-01-16",
-      expiresAt: "2024-01-16T18:00:00Z",
-      difficulty: "Easy",
-    },
-  ]
+  // const tasks = [
+  //   {
+  //     id: 1,
+  //     title: "E-commerce Product Review Survey",
+  //     category: "Survey",
+  //     payout: 45,
+  //     totalSlots: 25,
+  //     completed: 8,
+  //     maxParticipants: 25,
+  //     currentParticipants: 8,
+  //     timeLimit: 3, // hours
+  //     status: "active",
+  //     createdDate: "2024-01-15",
+  //     deadline: "2024-01-20",
+  //     expiresAt: "2024-01-20T18:00:00Z",
+  //     difficulty: "Easy",
+  //   },
+  //   {
+  //     id: 2,
+  //     title: "AI Training - Image Object Detection",
+  //     category: "AI Training",
+  //     payout: 35,
+  //     totalSlots: 50,
+  //     completed: 32,
+  //     maxParticipants: 50,
+  //     currentParticipants: 32,
+  //     timeLimit: 2, // hours
+  //     status: "active",
+  //     createdDate: "2024-01-14",
+  //     deadline: "2024-01-18",
+  //     expiresAt: "2024-01-18T20:00:00Z",
+  //     difficulty: "Medium",
+  //   },
+  //   {
+  //     id: 3,
+  //     title: "Content Moderation Task",
+  //     category: "Content Review",
+  //     payout: 60,
+  //     totalSlots: 15,
+  //     completed: 15,
+  //     maxParticipants: 15,
+  //     currentParticipants: 15,
+  //     timeLimit: 4, // hours
+  //     status: "completed",
+  //     createdDate: "2024-01-10",
+  //     deadline: "2024-01-15",
+  //     expiresAt: "2024-01-15T23:59:59Z",
+  //     difficulty: "Medium",
+  //   },
+  //   {
+  //     id: 4,
+  //     title: "Hindi Translation Project",
+  //     category: "Translation",
+  //     payout: 80,
+  //     totalSlots: 10,
+  //     completed: 3,
+  //     maxParticipants: 10,
+  //     currentParticipants: 3,
+  //     timeLimit: 6, // hours
+  //     status: "active",
+  //     createdDate: "2024-01-12",
+  //     deadline: "2024-01-22",
+  //     expiresAt: "2024-01-22T18:00:00Z",
+  //     difficulty: "Hard",
+  //   },
+  //   {
+  //     id: 5,
+  //     title: "Product Photography Review",
+  //     category: "Content Review",
+  //     payout: 30,
+  //     totalSlots: 20,
+  //     completed: 8,
+  //     maxParticipants: 20,
+  //     currentParticipants: 8,
+  //     timeLimit: 2, // hours
+  //     status: "expired",
+  //     createdDate: "2024-01-15",
+  //     deadline: "2024-01-16",
+  //     expiresAt: "2024-01-16T18:00:00Z",
+  //     difficulty: "Easy",
+  //   },
+  // ]
 
   const kycRequests = [
     {
@@ -532,113 +576,176 @@ const [error, setError] = useState(null);
             </TabsContent>
 
             <TabsContent value="tasks" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div>
-                      <CardTitle>Task Management</CardTitle>
-                      <CardDescription>Manage and monitor all platform tasks</CardDescription>
-                    </div>
-                    <Button 
-                      className="bg-blue-600 hover:bg-blue-700"
-                      onClick={() => setShowCreateTaskModal(true)}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Create Task
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Task</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead>Payout</TableHead>
-                          <TableHead>Progress</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Deadline</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {tasks.map((task) => {
-                          const participationRate = Math.round((task.currentParticipants / task.maxParticipants) * 100)
-                          const now = new Date()
-                          const expiry = new Date(task.expiresAt)
-                          const isExpired = now > expiry
-
-                          return (
-                            <TableRow key={task.id}>
-                              <TableCell>
-                                <div>
-                                  <div className="font-medium">{task.title}</div>
-                                  <div className="text-sm text-gray-500">Created {task.createdDate}</div>
-                                  <div className="text-xs text-gray-400">
-                                    {task.timeLimit}h time limit • Max {task.maxParticipants} participants
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="secondary">{task.category}</Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="font-medium text-green-600">₹{task.payout}</div>
-                              </TableCell>
-                              <TableCell>
-                                <div>
-                                  <div className="text-sm font-medium">
-                                    {task.currentParticipants}/{task.maxParticipants}
-                                  </div>
-                                  <div className="w-20 bg-gray-200 rounded-full h-2 mt-1">
-                                    <div
-                                      className={`h-2 rounded-full ${
-                                        participationRate >= 90
-                                          ? "bg-red-500"
-                                          : participationRate >= 70
-                                            ? "bg-yellow-500"
-                                            : "bg-green-500"
-                                      }`}
-                                      style={{ width: `${participationRate}%` }}
-                                    ></div>
-                                  </div>
-                                  <div className="text-xs text-gray-500 mt-1">{participationRate}% filled</div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge className={getStatusColor(isExpired ? "expired" : task.status)}>
-                                  {isExpired ? "expired" : task.status}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="text-sm">
-                                  <div>{task.deadline}</div>
-                                  {isExpired && <div className="text-xs text-red-600">Expired</div>}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Button size="sm" variant="outline">
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button size="sm" variant="outline">
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button size="sm" variant="outline" className="text-red-600">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+  <Card>
+    <CardHeader>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <CardTitle>Task Management</CardTitle>
+          <CardDescription>Manage and monitor all platform tasks</CardDescription>
+        </div>
+        <CreateTaskModal
+          isOpen={showCreateTaskModal}
+          onClose={() => setShowCreateTaskModal(false)}
+          onCreateTask={async (taskData) => {
+            // Replace with your API POST logic
+            try {
+              const res = await fetch('/api/admin/tasks', {
+                method: 'POST',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(taskData)
+              });
+              const result = await res.json();
+              if (res.ok) {
+                alert("Task created successfully! Task ID: " + result.id);
+                fetchTasks(); // Reload
+                setShowCreateTaskModal(false);
+              } else {
+                alert("Failed: " + result.error);
+              }
+            } catch (e) {
+              alert("Server error: " + e.message);
+            }
+          }}
+        />
+        <Button
+          className="bg-blue-600 hover:bg-blue-700"
+          onClick={() => setShowCreateTaskModal(true)}
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Create Task
+        </Button>
+      </div>
+    </CardHeader>
+    <CardContent>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Task</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Payout</TableHead>
+              <TableHead>Progress</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Deadline</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loadingTasks ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-gray-500 py-6">
+                  Loading tasks...
+                </TableCell>
+              </TableRow>
+            ) : tasksError ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-red-500 py-6">
+                  {tasksError}
+                </TableCell>
+              </TableRow>
+            ) : tasks.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-gray-500 py-6">
+                  No tasks found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              tasks.map(task => {
+                const participationRate = Math.round((task.currentParticipants / task.maxParticipants) * 100);
+                const now = new Date();
+                const expiry = new Date(task.expiresAt);
+                const isExpired = now > expiry;
+                return (
+                  <TableRow
+                    key={task.id}
+                    className="cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => {
+                      setSelectedTask(task);
+                      setIsTaskModalOpen(true);
+                    }}
+                  >
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{task.title}</div>
+                        <div className="text-sm text-gray-500">Created {task.createdDate}</div>
+                        <div className="text-xs text-gray-400">
+                          {task.timeLimit}h time limit • Max {task.maxParticipants} participants
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{task.category}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium text-green-600">₹{task.payout}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="text-sm font-medium">
+                          {task.currentParticipants}/{task.maxParticipants}
+                        </div>
+                        <div className="w-20 bg-gray-200 rounded-full h-2 mt-1">
+                          <div
+                            className={`h-2 rounded-full ${
+                              participationRate >= 90
+                                ? "bg-red-500"
+                                : participationRate >= 70
+                                ? "bg-yellow-500"
+                                : "bg-green-500"
+                            }`}
+                            style={{ width: `${participationRate}%` }}
+                          ></div>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">{participationRate}% filled</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(isExpired ? "expired" : task.status)}>
+                        {isExpired ? "expired" : task.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        <div>{task.deadline}</div>
+                        {isExpired && <div className="text-xs text-red-600">Expired</div>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={e => { e.stopPropagation(); /* Custom view logic here */ }}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={e => { e.stopPropagation(); /* Custom edit logic here */ }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-600"
+                          onClick={e => { e.stopPropagation(); /* Custom delete logic here */ }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </CardContent>
+  </Card>
+</TabsContent>
 
             <TabsContent value="kyc" className="space-y-6">
               <Card>
@@ -835,6 +942,12 @@ const [error, setError] = useState(null);
         isOpen={showCreateTaskModal}
         onClose={() => setShowCreateTaskModal(false)}
         onCreateTask={handleCreateTask}
+      />
+      <TaskDetailModal
+        task={selectedTask}
+        isOpen={isTaskModalOpen}
+        onClose={() => setIsTaskModalOpen(false)}
+        onTaskAction={handleTaskAction}
       />
     </div>
   )

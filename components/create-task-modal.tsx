@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, X, Upload, FileText, ImageIcon, Video, Calendar, Clock, Users, DollarSign, Target, AlertCircle, CheckCircle, Trash2 } from 'lucide-react'
+import { Plus, X, Upload, FileText, ImageIcon, Video, CheckCircle, Trash2 } from 'lucide-react'
 
 interface CreateTaskModalProps {
   isOpen: boolean
@@ -111,23 +111,44 @@ export function CreateTaskModal({ isOpen, onClose, onCreateTask }: CreateTaskMod
     }))
   }
 
-  const handleMediaUpload = (type: string, files: FileList | null) => {
+  // --- ASYNC FILE UPLOAD ---
+  const handleMediaUpload = async (type: string, files: FileList | null) => {
     if (!files) return
 
-    const newFiles = Array.from(files).map((file) => ({
-      id: Date.now() + Math.random(),
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      file: file,
-      url: URL.createObjectURL(file),
-    }))
+    const uploadPromises = Array.from(files).map(async (file) => {
+      const url = await uploadToBackblaze(file)
+      return {
+        id: Date.now() + Math.random(),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url,
+      }
+    })
+
+    const newFiles = await Promise.all(uploadPromises)
 
     setMediaFiles((prev) => ({
       ...prev,
       [type]: [...prev[type], ...newFiles],
     }))
   }
+
+  async function uploadToBackblaze(file: File): Promise<string> {
+    const formData = new FormData()
+    formData.append("file", file)
+
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    })
+
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || "Upload failed")
+    return data.url
+  }
+
+  // ----
 
   const removeMediaFile = (type: string, fileId: number) => {
     setMediaFiles((prev) => ({
@@ -148,8 +169,6 @@ export function CreateTaskModal({ isOpen, onClose, onCreateTask }: CreateTaskMod
       newErrors.maxParticipants = "Valid participant limit is required"
     if (!taskData.timeLimit || parseInt(taskData.timeLimit) <= 0) newErrors.timeLimit = "Valid time limit is required"
     if (!taskData.deadline) newErrors.deadline = "Deadline is required"
-
-    // Check if deadline is in the future
     if (taskData.deadline && new Date(taskData.deadline) <= new Date()) {
       newErrors.deadline = "Deadline must be in the future"
     }
