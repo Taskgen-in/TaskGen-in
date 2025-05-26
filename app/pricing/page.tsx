@@ -29,7 +29,7 @@ export default function PricingPage() {
     {
       name: "Premium Account",
       price: "₹199",
-      period: "Per Year",
+      period: "One Time Fee",
       description: "Unlock your full earning potential",
       features: [
         { text: "Access to ALL tasks", included: true },
