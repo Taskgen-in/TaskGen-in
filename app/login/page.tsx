@@ -49,20 +49,6 @@ export default function LoginPage() {
 
 
 
-  const fillUserCredentials = () => {
-    setFormData({
-      email: "user@taskgen.com",
-      password: "user123",
-    })
-  }
-
-  const fillAdminCredentials = () => {
-    setFormData({
-      email: "admin@taskgen.com",
-      password: "admin123",
-    })
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <Header />
@@ -138,59 +124,6 @@ export default function LoginPage() {
                   </Link>
                 </div>
               </form>
-
-              {/* Demo Credentials */}
-{/*               <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h3 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                  <Shield className="h-4 w-4" />
-                  Demo Credentials
-                </h3>
-                <div className="space-y-3">
-                  <div className="p-3 bg-white rounded border">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-green-600" />
-                        <strong className="text-green-700">User Dashboard</strong>
-                      </div>
-                      <Button size="sm" variant="outline" onClick={fillUserCredentials} className="text-xs">
-                        Auto Fill
-                      </Button>
-                    </div>
-                    <div className="text-sm space-y-1">
-                      <div>
-                        Email: <code className="bg-gray-100 px-1 rounded">user@taskgen.com</code>
-                      </div>
-                      <div>
-                        Password: <code className="bg-gray-100 px-1 rounded">user123</code>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-white rounded border">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4 text-red-600" />
-                        <strong className="text-red-700">Admin Dashboard</strong>
-                      </div>
-                      <Button size="sm" variant="outline" onClick={fillAdminCredentials} className="text-xs">
-                        Auto Fill
-                      </Button>
-                    </div>
-                    <div className="text-sm space-y-1">
-                      <div>
-                        Email: <code className="bg-gray-100 px-1 rounded">admin@taskgen.com</code>
-                      </div>
-                      <div>
-                        Password: <code className="bg-gray-100 px-1 rounded">admin123</code>
-                      </div>
-                    </div>
-                  </div>
-                </div> */}
-
-              //   <div className="mt-3 text-xs text-blue-600">
-              //     💡 Click "Auto Fill" buttons to quickly populate credentials
-              //   </div>
-              // </div>
             </CardContent>
           </Card>
         </div>
