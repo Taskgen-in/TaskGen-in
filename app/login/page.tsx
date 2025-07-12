@@ -187,10 +187,10 @@ export default function LoginPage() {
                   </div>
                 </div> */}
 
-                <div className="mt-3 text-xs text-blue-600">
-                  💡 Click "Auto Fill" buttons to quickly populate credentials
-                </div>
-              </div>
+              //   <div className="mt-3 text-xs text-blue-600">
+              //     💡 Click "Auto Fill" buttons to quickly populate credentials
+              //   </div>
+              // </div>
             </CardContent>
           </Card>
         </div>
