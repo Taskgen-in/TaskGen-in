@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Taaskgen.in',
+  title: 'Taskgen.in',
   description: 'Earn from home with simple micro-tasks. Join TaskGen.in for flexible work, instant payouts, and verified opportunities.',
   generator: 'TaskGen.in',
 }
