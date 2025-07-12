@@ -56,7 +56,7 @@ const [tasksError, setTasksError] = useState(null);
 
 const handleTaskAction = (taskId, action) => {
   // Implement real logic (view/edit/delete) as needed
-  console.log('Admin Task Action:', { taskId, action });
+  
   // setIsTaskModalOpen(false); // Uncomment to auto-close modal after action
 };
   const handleLogout = () => {
@@ -88,6 +88,27 @@ const fetchTasks = async () => {
 useEffect(() => {
   fetchTasks();
 }, [taskFilter]);
+
+// Fetch admin stats
+const fetchAdminStats = async () => {
+  setLoadingStats(true);
+  setStatsError(null);
+  try {
+    const res = await fetch('/api/admin/stats');
+    if (!res.ok) throw new Error('Failed to load admin statistics');
+    const data = await res.json();
+    console.log('Admin stats received:', data); // Debug log
+    setAdminStats(data);
+  } catch (e) {
+    console.error('Error fetching admin stats:', e); // Debug log
+    setStatsError(e.message || 'Error fetching admin statistics');
+  }
+  setLoadingStats(false);
+};
+
+useEffect(() => {
+  fetchAdminStats();
+}, []);
   const handleCreateTask = async (taskData) => {
   try {
     const res = await fetch('/api/admin/tasks', {
@@ -115,16 +136,25 @@ useEffect(() => {
 //   return user.kycStatus || "pending";
 // };
 
-  const adminStats = {
-    totalUsers: 12450,
-    activeUsers: 8920,
-    totalTasks: 2340,
-    activeTasks: 156,
-    totalPayouts: 2450000,
-    pendingPayouts: 45000,
-    completionRate: 87,
-    avgTaskTime: 18,
-  }
+  const [adminStats, setAdminStats] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    totalTasks: 0,
+    activeTasks: 0,
+    totalPayouts: 0,
+    pendingPayouts: 0,
+    completionRate: 0,
+    avgTaskTime: 0,
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [statsError, setStatsError] = useState(null);
+
+  // KYC Requests state
+  const [kycRequests, setKycRequests] = useState([]);
+  const [loadingKyc, setLoadingKyc] = useState(true);
+  const [kycError, setKycError] = useState(null);
+  const [selectedKycRequest, setSelectedKycRequest] = useState(null);
+  const [isKycModalOpen, setIsKycModalOpen] = useState(false);
 
   // const users = [
   //   {
@@ -260,65 +290,49 @@ useEffect(() => {
   //   },
   // ]
 
-  const kycRequests = [
-    {
-      id: 1,
-      userName: "Rajesh Gupta",
-      email: "rajesh.gupta@email.com",
-      submittedDate: "2024-01-16",
-      documents: ["Aadhaar", "PAN", "Selfie"],
-      upiId: "rajesh@paytm",
-      status: "pending",
-    },
-    {
-      id: 2,
-      userName: "Kavya Reddy",
-      email: "kavya.reddy@email.com",
-      submittedDate: "2024-01-15",
-      documents: ["Aadhaar", "PAN", "Selfie"],
-      bankAccount: "****5678 - HDFC",
-      status: "pending",
-    },
-    {
-      id: 3,
-      userName: "Arjun Mehta",
-      email: "arjun.mehta@email.com",
-      submittedDate: "2024-01-14",
-      documents: ["Aadhaar", "PAN"],
-      upiId: "arjun@gpay",
-      status: "incomplete",
-    },
-  ]
+  // Fetch KYC requests
+  const fetchKycRequests = async () => {
+    setLoadingKyc(true);
+    setKycError(null);
+    try {
+      const res = await fetch('/api/admin/kyc-requests');
+      if (!res.ok) throw new Error('Failed to load KYC requests');
+      const data = await res.json();
+      console.log('KYC requests received:', data); // Debug log
+      setKycRequests(data);
+    } catch (e) {
+      console.error('Error fetching KYC requests:', e); // Debug log
+      setKycError(e.message || 'Error fetching KYC requests');
+    }
+    setLoadingKyc(false);
+  };
 
-  const withdrawalRequests = [
-    {
-      id: 1,
-      userName: "Rahul Kumar",
-      amount: 2500,
-      method: "UPI",
-      details: "rahul@paytm",
-      requestDate: "2024-01-16",
-      status: "pending",
-    },
-    {
-      id: 2,
-      userName: "Priya Sharma",
-      amount: 1800,
-      method: "Bank Transfer",
-      details: "****1234 - SBI",
-      requestDate: "2024-01-15",
-      status: "processing",
-    },
-    {
-      id: 3,
-      userName: "Sneha Patel",
-      amount: 3200,
-      method: "UPI",
-      details: "sneha@phonepe",
-      requestDate: "2024-01-14",
-      status: "completed",
-    },
-  ]
+  useEffect(() => {
+    fetchKycRequests();
+  }, []);
+
+  // Withdrawals state
+  const [withdrawalRequests, setWithdrawalRequests] = useState([]);
+  const [loadingWithdrawals, setLoadingWithdrawals] = useState(true);
+  const [withdrawalsError, setWithdrawalsError] = useState(null);
+
+  const fetchWithdrawals = async () => {
+    setLoadingWithdrawals(true);
+    setWithdrawalsError(null);
+    try {
+      const res = await fetch('/api/admin/withdrawals');
+      if (!res.ok) throw new Error('Failed to load withdrawal requests');
+      const data = await res.json();
+      setWithdrawalRequests(data);
+    } catch (e) {
+      setWithdrawalsError(e.message || 'Error fetching withdrawal requests');
+    }
+    setLoadingWithdrawals(false);
+  };
+
+  useEffect(() => {
+    fetchWithdrawals();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -339,6 +353,29 @@ useEffect(() => {
         return "bg-gray-100 text-gray-800"
     }
   }
+
+  // Analytics state
+  const [analytics, setAnalytics] = useState(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
+  const [analyticsError, setAnalyticsError] = useState(null);
+
+  const fetchAnalytics = async () => {
+    setLoadingAnalytics(true);
+    setAnalyticsError(null);
+    try {
+      const res = await fetch('/api/admin/analytics');
+      if (!res.ok) throw new Error('Failed to load analytics');
+      const data = await res.json();
+      setAnalytics(data);
+    } catch (e) {
+      setAnalyticsError(e.message || 'Error fetching analytics');
+    }
+    setLoadingAnalytics(false);
+  };
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, []);
 
   return (
     // <AuthGuard requiredRole="admin">
@@ -393,6 +430,16 @@ useEffect(() => {
         </header>
 
         <div className="px-4 sm:px-6 lg:px-8 py-8">
+          {/* Error Display */}
+          {statsError && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center">
+                <XCircle className="h-5 w-5 text-red-400 mr-2" />
+                <span className="text-red-800">Error loading admin statistics: {statsError}</span>
+              </div>
+            </div>
+          )}
+          
           {/* Admin Stats Overview */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card>
@@ -401,8 +448,17 @@ useEffect(() => {
                 <Users className="h-4 w-4 text-blue-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{adminStats.totalUsers.toLocaleString()}</div>
-                <p className="text-xs text-green-600">+{adminStats.activeUsers.toLocaleString()} active</p>
+                {loadingStats ? (
+                  <div className="animate-pulse">
+                    <div className="h-8 bg-gray-200 rounded mb-1"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{adminStats.totalUsers.toLocaleString()}</div>
+                    <p className="text-xs text-green-600">+{adminStats.activeUsers.toLocaleString()} active</p>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -412,8 +468,17 @@ useEffect(() => {
                 <Target className="h-4 w-4 text-purple-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{adminStats.totalTasks.toLocaleString()}</div>
-                <p className="text-xs text-blue-600">{adminStats.activeTasks} currently active</p>
+                {loadingStats ? (
+                  <div className="animate-pulse">
+                    <div className="h-8 bg-gray-200 rounded mb-1"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{adminStats.totalTasks.toLocaleString()}</div>
+                    <p className="text-xs text-blue-600">{adminStats.activeTasks} currently active</p>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -423,8 +488,17 @@ useEffect(() => {
                 <DollarSign className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₹{(adminStats.totalPayouts / 100000).toFixed(1)}L</div>
-                <p className="text-xs text-orange-600">₹{(adminStats.pendingPayouts / 1000).toFixed(0)}K pending</p>
+                {loadingStats ? (
+                  <div className="animate-pulse">
+                    <div className="h-8 bg-gray-200 rounded mb-1"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">₹{(adminStats.totalPayouts / 100000).toFixed(1)}L</div>
+                    <p className="text-xs text-orange-600">₹{(adminStats.pendingPayouts / 1000).toFixed(0)}K pending</p>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -434,8 +508,17 @@ useEffect(() => {
                 <TrendingUp className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{adminStats.completionRate}%</div>
-                <p className="text-xs text-gray-600">Avg time: {adminStats.avgTaskTime}min</p>
+                {loadingStats ? (
+                  <div className="animate-pulse">
+                    <div className="h-8 bg-gray-200 rounded mb-1"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">{adminStats.completionRate}%</div>
+                    <p className="text-xs text-gray-600">Avg time: {adminStats.avgTaskTime}min</p>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -767,48 +850,75 @@ useEffect(() => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {kycRequests.map((request) => (
-                          <TableRow key={request.id}>
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">{request.userName}</div>
-                                <div className="text-sm text-gray-500">{request.email}</div>
-                              </div>
-                            </TableCell>
-                            <TableCell>{request.submittedDate}</TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1">
-                                {request.documents.map((doc, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs">
-                                    {doc}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm">
-                                {request.upiId && `UPI: ${request.upiId}`}
-                                {request.bankAccount && `Bank: ${request.bankAccount}`}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={getStatusColor(request.status)}>{request.status}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                                  <CheckCircle className="h-4 w-4" />
-                                </Button>
-                                <Button size="sm" variant="outline" className="text-red-600">
-                                  <XCircle className="h-4 w-4" />
-                                </Button>
-                                <Button size="sm" variant="outline">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </div>
+                        {loadingKyc ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center text-gray-500 py-6">
+                              Loading KYC requests...
                             </TableCell>
                           </TableRow>
-                        ))}
+                        ) : kycError ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center text-red-500 py-6">
+                              {kycError}
+                            </TableCell>
+                          </TableRow>
+                        ) : kycRequests.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center text-gray-500 py-6">
+                              No KYC requests found.
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          kycRequests.map((request) => (
+                            <TableRow key={request.id}>
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium">{request.userName}</div>
+                                  <div className="text-sm text-gray-500">{request.email}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell>{request.submittedDate}</TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {request.documents.map((doc, index) => (
+                                    <Badge key={index} variant="outline" className="text-xs">
+                                      {doc}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  {request.upiId && `UPI: ${request.upiId}`}
+                                  {request.bankAccount && `Bank: ${request.bankAccount}`}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={getStatusColor(request.status)}>{request.status}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                                    <CheckCircle className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="text-red-600">
+                                    <XCircle className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setSelectedKycRequest(request);
+                                      setIsKycModalOpen(true);
+                                    }}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
                       </TableBody>
                     </Table>
                   </div>
@@ -837,43 +947,63 @@ useEffect(() => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {withdrawalRequests.map((request) => (
-                          <TableRow key={request.id}>
-                            <TableCell>
-                              <div className="font-medium">{request.userName}</div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="font-medium text-green-600">₹{request.amount.toLocaleString()}</div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{request.method}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm">{request.details}</div>
-                            </TableCell>
-                            <TableCell>{request.requestDate}</TableCell>
-                            <TableCell>
-                              <Badge className={getStatusColor(request.status)}>{request.status}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {request.status === "pending" && (
-                                  <>
-                                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                                      <CheckCircle className="h-4 w-4" />
-                                    </Button>
-                                    <Button size="sm" variant="outline" className="text-red-600">
-                                      <XCircle className="h-4 w-4" />
-                                    </Button>
-                                  </>
-                                )}
-                                <Button size="sm" variant="outline">
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </div>
+                        {loadingWithdrawals ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center text-gray-500 py-6">
+                              Loading withdrawal requests...
                             </TableCell>
                           </TableRow>
-                        ))}
+                        ) : withdrawalsError ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center text-red-500 py-6">
+                              {withdrawalsError}
+                            </TableCell>
+                          </TableRow>
+                        ) : withdrawalRequests.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center text-gray-500 py-6">
+                              No withdrawal requests found.
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          withdrawalRequests.map((request) => (
+                            <TableRow key={request.id}>
+                              <TableCell>
+                                <div className="font-medium">{request.userName}</div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-medium text-green-600">₹{request.amount?.toLocaleString()}</div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{request.method}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">{request.details}</div>
+                              </TableCell>
+                              <TableCell>{request.requestDate}</TableCell>
+                              <TableCell>
+                                <Badge className={getStatusColor(request.status)}>{request.status}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {request.status === "pending" && (
+                                    <>
+                                      <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                                        <CheckCircle className="h-4 w-4" />
+                                      </Button>
+                                      <Button size="sm" variant="outline" className="text-red-600">
+                                        <XCircle className="h-4 w-4" />
+                                      </Button>
+                                    </>
+                                  )}
+                                  <Button size="sm" variant="outline">
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
                       </TableBody>
                     </Table>
                   </div>
@@ -882,59 +1012,63 @@ useEffect(() => {
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Platform Performance</CardTitle>
-                  </CardHeader>
-                  <CardContent>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Platform Performance</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loadingAnalytics ? (
+                    <div>Loading analytics...</div>
+                  ) : analyticsError ? (
+                    <div className="text-red-500">{analyticsError}</div>
+                  ) : analytics ? (
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
                         <span>Daily Active Users</span>
-                        <span className="font-semibold">2,340</span>
+                        <span className="font-semibold">{analytics.dailyActiveUsers}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span>Tasks Completed Today</span>
-                        <span className="font-semibold">456</span>
+                        <span className="font-semibold">{analytics.tasksCompletedToday}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span>Revenue Today</span>
-                        <span className="font-semibold text-green-600">₹23,400</span>
+                        <span className="font-semibold text-green-600">₹{analytics.revenueToday}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span>New Registrations</span>
-                        <span className="font-semibold">89</span>
+                        <span className="font-semibold">{analytics.newRegistrations}</span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  ) : null}
+                </CardContent>
+              </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Quick Actions</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                        <Upload className="h-4 w-4 mr-2" />
-                        Bulk Upload Tasks
-                      </Button>
-                      <Button variant="outline" className="w-full">
-                        <Download className="h-4 w-4 mr-2" />
-                        Export User Data
-                      </Button>
-                      <Button variant="outline" className="w-full">
-                        <FileText className="h-4 w-4 mr-2" />
-                        Generate Reports
-                      </Button>
-                      <Button variant="outline" className="w-full">
-                        <Activity className="h-4 w-4 mr-2" />
-                        System Health Check
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Bulk Upload Tasks
+                    </Button>
+                    <Button variant="outline" className="w-full">
+                      <Download className="h-4 w-4 mr-2" />
+                      Export User Data
+                    </Button>
+                    <Button variant="outline" className="w-full">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Generate Reports
+                    </Button>
+                    <Button variant="outline" className="w-full">
+                      <Activity className="h-4 w-4 mr-2" />
+                      System Health Check
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>
@@ -949,6 +1083,121 @@ useEffect(() => {
         onClose={() => setIsTaskModalOpen(false)}
         onTaskAction={handleTaskAction}
       />
+
+      {/* KYC Details Modal */}
+      {isKycModalOpen && selectedKycRequest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">KYC Request Details</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsKycModalOpen(false)}
+              >
+                <XCircle className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              {/* User Information */}
+              <div>
+                <h3 className="font-medium text-gray-900 mb-2">User Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Name</label>
+                    <p className="text-sm">{selectedKycRequest.userName}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Email</label>
+                    <p className="text-sm">{selectedKycRequest.email}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Phone</label>
+                    <p className="text-sm">{selectedKycRequest.phone}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Submitted Date</label>
+                    <p className="text-sm">{selectedKycRequest.submittedDate}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Verification Status */}
+              <div>
+                <h3 className="font-medium text-gray-900 mb-2">Verification Status</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${selectedKycRequest.kycVerified ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="text-sm">KYC Verified</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${selectedKycRequest.isVerified ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="text-sm">Account Verified</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${selectedKycRequest.mobileVerified ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="text-sm">Mobile Verified</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${selectedKycRequest.paymentSetup ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="text-sm">Payment Setup</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Documents Submitted */}
+              <div>
+                <h3 className="font-medium text-gray-900 mb-2">Documents Submitted</h3>
+                <div className="flex flex-wrap gap-2">
+                  {selectedKycRequest.documents.map((doc, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {doc}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Payment Information */}
+              <div>
+                <h3 className="font-medium text-gray-900 mb-2">Payment Information</h3>
+                <div className="space-y-2">
+                  {selectedKycRequest.upiId && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">UPI ID</label>
+                      <p className="text-sm">{selectedKycRequest.upiId}</p>
+                    </div>
+                  )}
+                  {selectedKycRequest.bankAccount && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Bank Account</label>
+                      <p className="text-sm">{selectedKycRequest.bankAccount}</p>
+                    </div>
+                  )}
+                  {!selectedKycRequest.upiId && !selectedKycRequest.bankAccount && (
+                    <p className="text-sm text-gray-500">No payment method configured</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-3 pt-4 border-t">
+                <Button className="bg-green-600 hover:bg-green-700">
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Approve KYC
+                </Button>
+                <Button variant="outline" className="text-red-600">
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Reject KYC
+                </Button>
+                <Button variant="outline" onClick={() => setIsKycModalOpen(false)}>
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

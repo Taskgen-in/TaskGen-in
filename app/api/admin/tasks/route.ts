@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
         quality_standards as qualityStandards, media, status, created_at as createdDate
       FROM tasks
       ORDER BY created_at DESC`
-    );
+    ) as [any[], any];
 
     const tasks = rows.map((task: any) => ({
       ...task,
@@ -56,7 +56,8 @@ export async function POST(req: NextRequest) {
       tags,
       estimatedTime,
       qualityStandards,
-      media
+      media,
+      questions // <-- array of questions
     } = body;
 
     if (
@@ -66,6 +67,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
     }
 
+    // Insert the main task
     const [result] = await pool.query(
       `INSERT INTO tasks (
         title, description, category, difficulty, payout, max_participants, time_limit, deadline,
@@ -80,17 +82,48 @@ export async function POST(req: NextRequest) {
         maxParticipants,
         timeLimit,
         deadline,
-        JSON.stringify(requirements.filter((r: string) => r.trim())),
-        JSON.stringify(instructions.filter((i: string) => i.trim())),
-        JSON.stringify(tags),
+        JSON.stringify(requirements?.filter((r: string) => r.trim()) || []),
+        JSON.stringify(instructions?.filter((i: string) => i.trim()) || []),
+        JSON.stringify(tags || []),
         estimatedTime || null,
         qualityStandards || null,
         JSON.stringify(media || {}),
         "active"
       ]
-    );
+    ) as [any, any];
 
-    return NextResponse.json({ success: true, id: result.insertId });
+    const taskId = (result as any).insertId;
+
+    // Insert questions if provided
+    if (Array.isArray(questions) && questions.length > 0) {
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        
+        // Handle multiple images for the question
+        const images = q.images || [];
+        const imageUrls = images.map((img: any) => img.url).join(',');
+        
+        await pool.query(
+          `INSERT INTO task_questions (
+            task_id, question_type, question_text, images, options, sort_order
+          ) VALUES (?, ?, ?, ?, ?, ?)` ,
+          [
+            taskId,
+            q.type || 'text',
+            q.question || '',
+            imageUrls || null,
+            JSON.stringify(q.options || []),
+            i + 1
+          ]
+        );
+      }
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      id: taskId,
+      message: "Task created successfully"
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

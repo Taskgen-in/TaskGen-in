@@ -9,17 +9,69 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, X, Upload, FileText, ImageIcon, Video, CheckCircle, Trash2 } from 'lucide-react'
+import { Plus, X, Upload, FileText, ImageIcon, Video, CheckCircle, Trash2, Image } from 'lucide-react'
+import { useEffect } from "react"
 
 interface CreateTaskModalProps {
   isOpen: boolean
   onClose: () => void
-  onCreateTask: (taskData: any) => void
+  onCreateTask: (taskData: any) => Promise<{ id: string } | undefined>
+}
+
+interface Question {
+  id: string
+  question: string
+  type: "text" | "multiple-choice" | "image-annotation" | "image-comparison"
+  options: string[]
+  images: Array<{
+    id: number
+    name: string
+    size: number
+    type: string
+    url: string
+  }>
+}
+
+interface TaskData {
+  title: string
+  description: string
+  category: string
+  difficulty: string
+  payout: string
+  maxParticipants: string
+  timeLimit: string
+  deadline: string
+  requirements: string[]
+  instructions: string[]
+  tags: string[]
+  estimatedTime: string
+  qualityStandards: string
+  questions: Question[]
+}
+
+interface Errors {
+  [key: string]: string
+}
+
+interface MediaFile {
+  id: number
+  name: string
+  size: number
+  type: string
+  url: string
+  file?: File
+  isTemp?: boolean
+}
+
+interface MediaFiles {
+  videos: MediaFile[]
+  images: MediaFile[]
+  documents: MediaFile[]
 }
 
 export function CreateTaskModal({ isOpen, onClose, onCreateTask }: CreateTaskModalProps) {
   const [currentTab, setCurrentTab] = useState("basic")
-  const [taskData, setTaskData] = useState({
+  const [taskData, setTaskData] = useState<TaskData>({
     title: "",
     description: "",
     category: "",
@@ -33,16 +85,25 @@ export function CreateTaskModal({ isOpen, onClose, onCreateTask }: CreateTaskMod
     tags: [],
     estimatedTime: "",
     qualityStandards: "",
+    questions: [
+      {
+        id: "1",
+        question: "",
+        type: "text",
+        options: [""],
+        images: []
+      }
+    ]
   })
 
-  const [mediaFiles, setMediaFiles] = useState({
+  const [mediaFiles, setMediaFiles] = useState<MediaFiles>({
     videos: [],
     images: [],
     documents: [],
   })
 
   const [newTag, setNewTag] = useState("")
-  const [errors, setErrors] = useState({})
+  const [errors, setErrors] = useState<Errors>({})
 
   const categories = [
     "Survey",
@@ -59,13 +120,20 @@ export function CreateTaskModal({ isOpen, onClose, onCreateTask }: CreateTaskMod
 
   const difficulties = ["Easy", "Medium", "Hard"]
 
-  const handleInputChange = (field: string, value: string) => {
+  const questionTypes = [
+    { value: "text", label: "Text Input" },
+    { value: "multiple-choice", label: "Multiple Choice" },
+    { value: "image-annotation", label: "Image Annotation" },
+    { value: "image-comparison", label: "Image Comparison" }
+  ]
+
+  const handleInputChange = (field: keyof TaskData, value: string) => {
     setTaskData((prev) => ({
       ...prev,
       [field]: value,
     }))
     // Clear error when user starts typing
-    if (errors[field]) {
+    if (errors[field as keyof Errors]) {
       setErrors((prev) => ({
         ...prev,
         [field]: "",
@@ -73,24 +141,131 @@ export function CreateTaskModal({ isOpen, onClose, onCreateTask }: CreateTaskMod
     }
   }
 
-  const handleArrayChange = (field: string, index: number, value: string) => {
+  const handleArrayChange = (field: "requirements" | "instructions", index: number, value: string) => {
     setTaskData((prev) => ({
       ...prev,
-      [field]: prev[field].map((item, i) => (i === index ? value : item)),
+      [field]: prev[field].map((item: string, i: number) => (i === index ? value : item)),
     }))
   }
 
-  const addArrayItem = (field: string) => {
+  const addArrayItem = (field: "requirements" | "instructions") => {
     setTaskData((prev) => ({
       ...prev,
       [field]: [...prev[field], ""],
     }))
   }
 
-  const removeArrayItem = (field: string, index: number) => {
+  const removeArrayItem = (field: "requirements" | "instructions", index: number) => {
     setTaskData((prev) => ({
       ...prev,
-      [field]: prev[field].filter((_, i) => i !== index),
+      [field]: prev[field].filter((_: string, i: number) => i !== index),
+    }))
+  }
+
+  // Question handlers
+  const addQuestion = () => {
+    const newQuestion: Question = {
+      id: Date.now().toString(),
+      question: "",
+      type: "text",
+      options: [""],
+      images: []
+    }
+    setTaskData((prev) => ({
+      ...prev,
+      questions: [...prev.questions, newQuestion]
+    }))
+  }
+
+  const removeQuestion = (questionId: string) => {
+    setTaskData((prev) => ({
+      ...prev,
+      questions: prev.questions.filter(q => q.id !== questionId)
+    }))
+  }
+
+  const handleQuestionChange = (questionId: string, field: keyof Question, value: string | string[]) => {
+    setTaskData((prev) => ({
+      ...prev,
+      questions: prev.questions.map(q => 
+        q.id === questionId 
+          ? { ...q, [field]: value }
+          : q
+      )
+    }))
+  }
+
+  const addOption = (questionId: string) => {
+    setTaskData((prev) => ({
+      ...prev,
+      questions: prev.questions.map(q => 
+        q.id === questionId 
+          ? { ...q, options: [...q.options, ""] }
+          : q
+      )
+    }))
+  }
+
+  const removeOption = (questionId: string, optionIndex: number) => {
+    setTaskData((prev) => ({
+      ...prev,
+      questions: prev.questions.map(q => 
+        q.id === questionId 
+          ? { ...q, options: q.options.filter((_, i) => i !== optionIndex) }
+          : q
+      )
+    }))
+  }
+
+  const handleOptionChange = (questionId: string, optionIndex: number, value: string) => {
+    setTaskData((prev) => ({
+      ...prev,
+      questions: prev.questions.map(q => 
+        q.id === questionId 
+          ? { 
+              ...q, 
+              options: q.options.map((opt, i) => i === optionIndex ? value : opt)
+            }
+          : q
+      )
+    }))
+  }
+
+  // Question image handlers
+  const handleQuestionImageUpload = async (questionId: string, files: FileList | null) => {
+    if (!files) return
+
+    const uploadPromises = Array.from(files).map(async (file) => {
+      const url = await uploadToLocal(file, "question")
+      return {
+        id: Date.now() + Math.random(),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url,
+      }
+    })
+
+    const newFiles = await Promise.all(uploadPromises)
+
+    setTaskData((prev) => ({
+      ...prev,
+      questions: prev.questions.map(q => 
+        q.id === questionId 
+          ? { ...q, images: [...q.images, ...newFiles] }
+          : q
+      )
+    }))
+  }
+
+  const removeQuestionImage = (questionId: string, imageId: number) => {
+    setTaskData((prev) => ({
+      ...prev,
+      questions: prev.questions.map(q => 
+        q.id === questionId 
+          ? { ...q, images: q.images.filter(img => img.id !== imageId) }
+          : q
+      )
     }))
   }
 
@@ -112,17 +287,21 @@ export function CreateTaskModal({ isOpen, onClose, onCreateTask }: CreateTaskMod
   }
 
   // --- ASYNC FILE UPLOAD ---
-  const handleMediaUpload = async (type: string, files: FileList | null) => {
+  const handleMediaUpload = async (type: keyof MediaFiles, files: FileList | null) => {
     if (!files) return
 
     const uploadPromises = Array.from(files).map(async (file) => {
-      const url = await uploadToBackblaze(file)
+      // For media uploads in the Media tab, we'll store them temporarily
+      // and upload them later when the task is created
+      const tempUrl = URL.createObjectURL(file)
       return {
         id: Date.now() + Math.random(),
         name: file.name,
         size: file.size,
         type: file.type,
-        url,
+        url: tempUrl,
+        file: file, // Keep the file object for later upload
+        isTemp: true
       }
     })
 
@@ -134,23 +313,36 @@ export function CreateTaskModal({ isOpen, onClose, onCreateTask }: CreateTaskMod
     }))
   }
 
-  async function uploadToBackblaze(file: File): Promise<string> {
+  async function uploadToLocal(file: File, uploadType: string = "question", taskId?: string): Promise<string> {
     const formData = new FormData()
     formData.append("file", file)
+    formData.append("uploadType", uploadType)
+    
+    if (taskId) {
+      formData.append("taskId", taskId)
+    }
 
-    const res = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-    })
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
 
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.error || "Upload failed")
-    return data.url
+      const data = await res.json()
+      if (!res.ok) {
+        console.error("Upload failed:", data)
+        throw new Error(data.error || data.message || `Upload failed with status ${res.status}`)
+      }
+      return data.url
+    } catch (error) {
+      console.error("Upload error:", error)
+      throw new Error(`Failed to upload ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
   }
 
   // ----
 
-  const removeMediaFile = (type: string, fileId: number) => {
+  const removeMediaFile = (type: keyof MediaFiles, fileId: number) => {
     setMediaFiles((prev) => ({
       ...prev,
       [type]: prev[type].filter((file) => file.id !== fileId),
@@ -158,7 +350,7 @@ export function CreateTaskModal({ isOpen, onClose, onCreateTask }: CreateTaskMod
   }
 
   const validateForm = () => {
-    const newErrors = {}
+    const newErrors: Errors = {}
 
     if (!taskData.title.trim()) newErrors.title = "Title is required"
     if (!taskData.description.trim()) newErrors.description = "Description is required"
@@ -173,33 +365,95 @@ export function CreateTaskModal({ isOpen, onClose, onCreateTask }: CreateTaskMod
       newErrors.deadline = "Deadline must be in the future"
     }
 
+    // Validate questions
+    taskData.questions.forEach((question, index) => {
+      if (!question.question.trim()) {
+        newErrors[`question-${index}`] = "Question text is required"
+      }
+      if (question.type === "multiple-choice" && question.options.length < 2) {
+        newErrors[`question-${index}-options`] = "Multiple choice questions need at least 2 options"
+      }
+      if ((question.type === "image-annotation" || question.type === "image-comparison") && question.images.length === 0) {
+        newErrors[`question-${index}-images`] = "Image questions require at least one image"
+      }
+      if (question.type === "image-comparison" && question.images.length < 2) {
+        newErrors[`question-${index}-images`] = "Image comparison questions need at least 2 images"
+      }
+    })
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) {
       return
     }
 
-    const newTask = {
-      id: Date.now(),
-      ...taskData,
-      payout: parseFloat(taskData.payout),
-      maxParticipants: parseInt(taskData.maxParticipants),
-      timeLimit: parseInt(taskData.timeLimit),
-      currentParticipants: 0,
-      status: "active",
-      createdDate: new Date().toISOString().split("T")[0],
-      expiresAt: new Date(taskData.deadline + "T23:59:59Z").toISOString(),
-      media: mediaFiles,
-      requirements: taskData.requirements.filter((req) => req.trim()),
-      instructions: taskData.instructions.filter((inst) => inst.trim()),
-    }
+    try {
+      // First, create the task to get the task ID
+      const taskDataToSubmit = {
+        ...taskData,
+        payout: parseFloat(taskData.payout),
+        maxParticipants: parseInt(taskData.maxParticipants),
+        timeLimit: parseInt(taskData.timeLimit),
+        requirements: taskData.requirements.filter((req) => req.trim()),
+        instructions: taskData.instructions.filter((inst) => inst.trim()),
+        questions: taskData.questions.filter(q => q.question.trim())
+      }
 
-    onCreateTask(newTask)
-    onClose()
-    resetForm()
+      // Call the onCreateTask function to create the task
+      const result = await onCreateTask(taskDataToSubmit)
+      
+      // If we have a task ID and media files, upload them with the task ID
+      if (result && 'id' in result && (mediaFiles.videos.length > 0 || mediaFiles.images.length > 0 || mediaFiles.documents.length > 0)) {
+        await uploadMediaWithTaskId(result.id as string)
+      }
+
+      onClose()
+      resetForm()
+    } catch (error) {
+      console.error("Error creating task:", error)
+      // You might want to show an error message to the user here
+    }
+  }
+
+  const uploadMediaWithTaskId = async (taskId: string) => {
+    const uploadPromises: Promise<any>[] = []
+
+    // Upload videos
+    mediaFiles.videos.forEach(file => {
+      if ((file as any).isTemp && (file as any).file) {
+        uploadPromises.push(
+          uploadToLocal((file as any).file, "description", taskId)
+        )
+      }
+    })
+
+    // Upload images
+    mediaFiles.images.forEach(file => {
+      if ((file as any).isTemp && (file as any).file) {
+        uploadPromises.push(
+          uploadToLocal((file as any).file, "description", taskId)
+        )
+      }
+    })
+
+    // Upload documents
+    mediaFiles.documents.forEach(file => {
+      if ((file as any).isTemp && (file as any).file) {
+        uploadPromises.push(
+          uploadToLocal((file as any).file, "instruction", taskId)
+        )
+      }
+    })
+
+    try {
+      await Promise.all(uploadPromises)
+      console.log("All media files uploaded successfully")
+    } catch (error) {
+      console.error("Error uploading media files:", error)
+    }
   }
 
   const resetForm = () => {
@@ -217,6 +471,15 @@ export function CreateTaskModal({ isOpen, onClose, onCreateTask }: CreateTaskMod
       tags: [],
       estimatedTime: "",
       qualityStandards: "",
+      questions: [
+        {
+          id: "1",
+          question: "",
+          type: "text",
+          options: [""],
+          images: []
+        }
+      ]
     })
     setMediaFiles({
       videos: [],
@@ -243,8 +506,9 @@ export function CreateTaskModal({ isOpen, onClose, onCreateTask }: CreateTaskMod
         </DialogHeader>
 
         <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="basic">Basic Info</TabsTrigger>
+            <TabsTrigger value="questions">Questions</TabsTrigger>
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="media">Media</TabsTrigger>
             <TabsTrigger value="review">Review</TabsTrigger>
@@ -375,6 +639,182 @@ export function CreateTaskModal({ isOpen, onClose, onCreateTask }: CreateTaskMod
                 className={errors.description ? "border-red-500" : ""}
               />
               {errors.description && <p className="text-sm text-red-600 mt-1">{errors.description}</p>}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="questions" className="space-y-6">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Task Questions</h3>
+                <Button onClick={addQuestion} variant="outline" size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Question
+                </Button>
+              </div>
+
+              {taskData.questions.map((question, questionIndex) => (
+                <Card key={question.id} className="p-4">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-medium">Question {questionIndex + 1}</h4>
+                      {taskData.questions.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeQuestion(question.id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Question Text */}
+                      <div>
+                        <Label>Question Text *</Label>
+                        <Textarea
+                          value={question.question}
+                          onChange={(e) => handleQuestionChange(question.id, "question", e.target.value)}
+                          placeholder="Enter your question"
+                          className={errors[`question-${questionIndex}`] ? "border-red-500" : ""}
+                        />
+                        {errors[`question-${questionIndex}`] && (
+                          <p className="text-sm text-red-600 mt-1">{errors[`question-${questionIndex}`]}</p>
+                        )}
+                      </div>
+
+                      {/* Question Type */}
+                      <div>
+                        <Label>Question Type</Label>
+                        <Select 
+                          value={question.type} 
+                          onValueChange={(value) => handleQuestionChange(question.id, "type", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {questionTypes.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Options for Multiple Choice */}
+                      {(question.type === "multiple-choice" || question.type === "image-comparison") && (
+                        <div>
+                          <Label>Options</Label>
+                          <div className="space-y-2">
+                            {question.options.map((option, optionIndex) => (
+                              <div key={optionIndex} className="flex gap-2">
+                                <Input
+                                  value={option}
+                                  onChange={(e) => handleOptionChange(question.id, optionIndex, e.target.value)}
+                                  placeholder={`Option ${optionIndex + 1}`}
+                                />
+                                {question.options.length > 1 && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => removeOption(question.id, optionIndex)}
+                                    className="text-red-600"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => addOption(question.id)}
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add Option
+                            </Button>
+                          </div>
+                          {errors[`question-${questionIndex}-options`] && (
+                            <p className="text-sm text-red-600 mt-1">{errors[`question-${questionIndex}-options`]}</p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Images for Image-based questions */}
+                      {(question.type === "image-annotation" || question.type === "image-comparison") && (
+                        <div>
+                          <Label>Question Images *</Label>
+                          <div className="space-y-4">
+                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={(e) => handleQuestionImageUpload(question.id, e.target.files)}
+                                className="hidden"
+                                id={`image-upload-${question.id}`}
+                              />
+                              <label htmlFor={`image-upload-${question.id}`} className="cursor-pointer block">
+                                <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                                <p className="text-sm text-gray-600 font-medium">Click to upload images for this question</p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  {question.type === "image-comparison" 
+                                    ? "Upload multiple images for comparison" 
+                                    : "Upload images for annotation"
+                                  }
+                                </p>
+                              </label>
+                            </div>
+                            
+                            {question.images.length > 0 && (
+                              <div className="space-y-2">
+                                <p className="text-sm font-medium text-gray-700">
+                                  Uploaded Images ({question.images.length}):
+                                </p>
+                                {question.images.map((image, imageIndex) => (
+                                  <div key={image.id} className="flex items-center justify-between p-3 bg-gray-50 rounded border">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 bg-blue-100 rounded flex items-center justify-center">
+                                        <span className="text-xs font-medium text-blue-600">{imageIndex + 1}</span>
+                                      </div>
+                                      <div>
+                                        <p className="text-sm font-medium">{image.name}</p>
+                                        <p className="text-xs text-gray-500">{formatFileSize(image.size)}</p>
+                                      </div>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => removeQuestionImage(question.id, image.id)}
+                                      className="text-red-600 hover:text-red-700"
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {question.images.length === 0 && (
+                              <div className="text-center py-4 text-gray-500">
+                                <Image className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                                <p className="text-sm">No images uploaded yet</p>
+                              </div>
+                            )}
+                            
+                            {errors[`question-${questionIndex}-images`] && (
+                              <p className="text-sm text-red-600 mt-1">{errors[`question-${questionIndex}-images`]}</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              ))}
             </div>
           </TabsContent>
 
@@ -682,6 +1122,10 @@ export function CreateTaskModal({ isOpen, onClose, onCreateTask }: CreateTaskMod
                       <h4 className="font-semibold mb-2">Content</h4>
                       <div className="space-y-2 text-sm">
                         <div>
+                          <span className="text-gray-600">Questions:</span>
+                          <span className="ml-2">{taskData.questions.filter(q => q.question.trim()).length} questions</span>
+                        </div>
+                        <div>
                           <span className="text-gray-600">Requirements:</span>
                           <span className="ml-2">{taskData.requirements.filter((r) => r.trim()).length} items</span>
                         </div>
@@ -723,6 +1167,33 @@ export function CreateTaskModal({ isOpen, onClose, onCreateTask }: CreateTaskMod
                   </div>
                 )}
 
+                {taskData.questions.filter(q => q.question.trim()).length > 0 && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Questions Preview</h4>
+                    <div className="space-y-3">
+                      {taskData.questions.filter(q => q.question.trim()).map((question, index) => (
+                        <div key={question.id} className="border rounded p-3">
+                          <div className="flex justify-between items-start mb-2">
+                            <span className="font-medium">Question {index + 1}</span>
+                            <Badge variant="secondary">{question.type}</Badge>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{question.question}</p>
+                          {question.options.length > 0 && question.options[0] && (
+                            <div className="text-xs text-gray-500">
+                              Options: {question.options.filter(opt => opt.trim()).length} available
+                            </div>
+                          )}
+                          {question.images.length > 0 && (
+                            <div className="text-xs text-gray-500">
+                              Images: {question.images.length} attached
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {taskData.tags.length > 0 && (
                   <div>
                     <h4 className="font-semibold mb-2">Tags</h4>
@@ -749,7 +1220,7 @@ export function CreateTaskModal({ isOpen, onClose, onCreateTask }: CreateTaskMod
               <Button
                 variant="outline"
                 onClick={() => {
-                  const tabs = ["basic", "details", "media", "review"]
+                  const tabs = ["basic", "questions", "details", "media", "review"]
                   const currentIndex = tabs.indexOf(currentTab)
                   if (currentIndex > 0) {
                     setCurrentTab(tabs[currentIndex - 1])
@@ -762,7 +1233,7 @@ export function CreateTaskModal({ isOpen, onClose, onCreateTask }: CreateTaskMod
             {currentTab !== "review" ? (
               <Button
                 onClick={() => {
-                  const tabs = ["basic", "details", "media", "review"]
+                  const tabs = ["basic", "questions", "details", "media", "review"]
                   const currentIndex = tabs.indexOf(currentTab)
                   if (currentIndex < tabs.length - 1) {
                     setCurrentTab(tabs[currentIndex + 1])

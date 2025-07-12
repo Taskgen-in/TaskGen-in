@@ -31,7 +31,7 @@ export default function LoginPage() {
     credentials: "include",
   });
   const data = await res.json();
-  console.log("Login API response", data);
+  
 
   if (data.success && data.user) {
   localStorage.setItem("userRole", data.user.role);

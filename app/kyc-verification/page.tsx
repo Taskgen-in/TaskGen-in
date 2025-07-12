@@ -96,7 +96,7 @@ export default function KYCVerificationPage() {
   }
 
   const handleSubmit = () => {
-    console.log("KYC submission:", formData)
+
     // Handle KYC submission
   }
 

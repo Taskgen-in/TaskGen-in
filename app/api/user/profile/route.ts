@@ -4,9 +4,8 @@ import { verifyJWT } from "@/lib/auth";
 import { pool } from "@/lib/db";
 
 export async function GET() {
-  const cookieStore = cookies(); // No await needed
+  const cookieStore = await cookies(); // No await needed
   const token = cookieStore.get("session_token")?.value;
-  console.log("PROFILE: token from cookies =", token);
 
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -23,9 +22,9 @@ export async function GET() {
     FROM users WHERE id = ?`,
     [payload.id]
   );
-  if (!rows.length) return NextResponse.json({ error: "User not found" }, { status: 404 });
+  if (!(rows as any).length) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-  const user = rows[0];
+  const user = (rows as any)[0];
   return NextResponse.json({
     emailVerified: !!user.emailVerified,
     mobileVerified: !!user.mobileVerified,

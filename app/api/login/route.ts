@@ -3,14 +3,14 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { signJWT } from '@/lib/auth';
 
-export async function POST(req) {
+export async function POST(req: any) {
   const { email, password } = await req.json();
 
   const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
-  if (!rows.length)
+  if (!(rows as any).length)
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
-  const user = rows[0];
+  const user = (rows as any)[0];
   const match = await bcrypt.compare(password, user.password);
   if (!match)
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
@@ -29,7 +29,7 @@ export async function POST(req) {
     sameSite: "lax",
     maxAge: 60 * 60 * 24 * 7,
   });
-console.log("Will return user:", user);
+
 
   return response;
 }
