@@ -140,7 +140,7 @@ export default function LoginPage() {
               </form>
 
               {/* Demo Credentials */}
-              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+{/*               <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <h3 className="font-semibold text-blue-800 mb-3 flex items-center gap-2">
                   <Shield className="h-4 w-4" />
                   Demo Credentials
@@ -185,7 +185,7 @@ export default function LoginPage() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </div> */}
 
                 <div className="mt-3 text-xs text-blue-600">
                   💡 Click "Auto Fill" buttons to quickly populate credentials
