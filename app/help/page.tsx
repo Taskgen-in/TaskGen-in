@@ -54,12 +54,12 @@ export default function HelpPage() {
               </div>
               <div className="flex items-center gap-3">
                 <MessageCircle className="h-5 w-5 text-green-600" />
-                <span className="font-medium">+91 98765 43210</span>
+                <span className="font-medium">+91 9344759416</span>
                 <span className="text-gray-500 text-sm">(WhatsApp Support)</span>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="h-5 w-5 text-blue-600" />
-                <span className="font-medium">+91 98765 43210</span>
+                <span className="font-medium">+91 9344759416</span>
                 <span className="text-gray-500 text-sm">(Phone Support)</span>
               </div>
               <div className="flex items-center gap-3">

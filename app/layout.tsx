@@ -2,9 +2,9 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.dev',
+  title: 'TaskGen.in',
+  description: "India's most trusted work-from-home micro-task platform. Earn money with simple tasks, anytime, anywhere.",
+  generator: 'TaskGen.in',
 }
 
 export default function RootLayout({
